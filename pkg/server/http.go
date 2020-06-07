@@ -11,21 +11,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// ctxKey represents the type of value for the context key.
-type ctxKey int
-
-// KeyValues is how request values or stored/retrieved.
-const KeyValues ctxKey = 1
-
-// Values represent state for each request.
-type Values struct {
-	Now         time.Time
-	TraceID     string
-	Method      string
-	RequestPath string
-	StatusCode  int
-}
-
 type server struct {
 	router *httprouter.Router
 	logger *zap.SugaredLogger
@@ -90,7 +75,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //
 
 func Respond(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
-	if v, ok := r.Context().Value(KeyValues).(*Values); ok {
+	if v := getValues(r); v != nil {
 		v.StatusCode = status
 	}
 

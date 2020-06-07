@@ -20,8 +20,8 @@ func MetricsMW() Middleware {
 	return func(next http.Handler) http.Handler {
 		var h http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
-				v, ok := r.Context().Value(KeyValues).(*Values)
-				if !ok {
+				v := getValues(r)
+				if v == nil {
 					return
 				}
 
