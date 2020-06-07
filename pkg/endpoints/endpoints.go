@@ -7,8 +7,8 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 
-	account "github.com/dlmiddlecote/api.accounts"
-	"github.com/dlmiddlecote/api.accounts/pkg/server"
+	account "github.com/dlmiddlecote/accounts-api"
+	"github.com/dlmiddlecote/accounts-api/pkg/server"
 )
 
 type accountEndpoints struct {

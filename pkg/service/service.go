@@ -3,7 +3,7 @@ package service
 import (
 	"go.uber.org/zap"
 
-	account "github.com/dlmiddlecote/api.accounts"
+	account "github.com/dlmiddlecote/accounts-api"
 )
 
 // service represents an implementation of the account service.

@@ -1,4 +1,4 @@
-module github.com/dlmiddlecote/api.accounts
+module github.com/dlmiddlecote/accounts-api
 
 go 1.14
 

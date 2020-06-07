@@ -15,10 +15,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	account "github.com/dlmiddlecote/api.accounts"
-	"github.com/dlmiddlecote/api.accounts/pkg/endpoints"
-	"github.com/dlmiddlecote/api.accounts/pkg/server"
-	"github.com/dlmiddlecote/api.accounts/pkg/service"
+	account "github.com/dlmiddlecote/accounts-api"
+	"github.com/dlmiddlecote/accounts-api/pkg/endpoints"
+	"github.com/dlmiddlecote/accounts-api/pkg/server"
+	"github.com/dlmiddlecote/accounts-api/pkg/service"
 )
 
 const (
