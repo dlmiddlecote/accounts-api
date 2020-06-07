@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	_ "net/http/pprof" // Register the pprof handlers
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,15 +16,16 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	account "github.com/dlmiddlecote/accounts-api"
 	"github.com/dlmiddlecote/accounts-api/pkg/api"
 	"github.com/dlmiddlecote/accounts-api/pkg/service"
 	kitapi "github.com/dlmiddlecote/kit/api"
 )
 
 const (
+	// buildVersion is the git version of this program. It is set using build flags.
 	buildVersion = "dev"
-	namespace    = "ACCOUNTS"
+	// namespace is the prefix used for application configuration.
+	namespace = "ACCOUNTS"
 )
 
 func main() {
@@ -34,7 +36,10 @@ func main() {
 }
 
 func run() error {
+	//
 	// Configuration
+	//
+
 	var cfg struct {
 		Web struct {
 			APIHost         string        `conf:"default:0.0.0.0:8080"`
@@ -51,6 +56,7 @@ func run() error {
 		}
 	}
 
+	// Parse configuration, showing usage if needed.
 	if err := conf.Parse(os.Args[1:], namespace, &cfg); err != nil {
 		if err == conf.ErrHelpWanted {
 			usage, err := conf.Usage(namespace, &cfg)
@@ -64,7 +70,10 @@ func run() error {
 		return errors.Wrap(err, "parsing config")
 	}
 
+	//
 	// Logging
+	//
+
 	var logger *zap.SugaredLogger
 	{
 		if l, err := zapdriver.NewProduction(); err != nil {
@@ -73,15 +82,22 @@ func run() error {
 			logger = l.Sugar()
 		}
 	}
+	// Flush logs at the end of the applications lifetime
 	defer logger.Sync()
 
 	logger.Infow("Application starting", "version", buildVersion)
 	defer logger.Info("Application finished")
 
+	//
 	// Debug listener
+	//
+
 	if cfg.Web.EnableDebug {
 
+		// Expose Prometheus metrics at '/metrics'.
 		http.Handle("/metrics", promhttp.Handler())
+
+		// Start the debug listener in the background, we don't gracefully shut this down.
 		go func() {
 			logger.Infow("Debug listener starting", "addr", cfg.Web.DebugHost)
 			err := http.ListenAndServe(cfg.Web.DebugHost, http.DefaultServeMux)
@@ -89,20 +105,22 @@ func run() error {
 		}()
 	}
 
-	// main application setup
-	var svc account.Service
-	{
-		svc = service.NewService(logger.Named("service"))
-	}
-
-	var a kitapi.API
-	{
-		a = api.NewAccountAPI(logger.Named("api"), svc)
-	}
+	//
+	// Application server setup
+	//
 
 	var app http.Server
 	{
-		app = kitapi.NewServer(logger.Named("server"), a, cfg.Web.APIHost)
+		// Initialise our account service. This exposes all our desired account interactions.
+		svc := service.NewService(logger.Named("service"))
+
+		// Create our account API. This is an implementation of the kit API.
+		// It has a dependency on the account service, as it provides this service as a
+		// HTTP API.
+		accAPI := api.NewAccountAPI(logger.Named("api"), svc)
+
+		// Create our http.Server, exposing the account API on the given host.
+		app = kitapi.NewServer(cfg.Web.APIHost, logger.Named("server"), accAPI)
 	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
@@ -114,13 +132,16 @@ func run() error {
 	// buffered channel so the goroutine can exit if we don't collect this error.
 	serverErrors := make(chan error, 1)
 
-	// Start the service listening for requests.
+	// Start the server listening for requests.
 	go func() {
-		logger.Infow("API listener starting", "addr", cfg.Web.APIHost)
+		logger.Infow("API listener starting", "addr", app.Addr)
 		serverErrors <- app.ListenAndServe()
 	}()
 
+	//
 	// Shutdown
+	//
+
 	// Blocking main and waiting for shutdown.
 	select {
 	case err := <-serverErrors:
