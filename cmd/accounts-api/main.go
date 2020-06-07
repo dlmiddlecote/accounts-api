@@ -16,8 +16,9 @@ import (
 	"go.uber.org/zap"
 
 	account "github.com/dlmiddlecote/api.accounts"
+	"github.com/dlmiddlecote/api.accounts/pkg/endpoints"
+	"github.com/dlmiddlecote/api.accounts/pkg/server"
 	"github.com/dlmiddlecote/api.accounts/pkg/service"
-	"github.com/dlmiddlecote/api.accounts/pkg/transport"
 )
 
 const (
@@ -94,9 +95,14 @@ func start() error {
 		svc = service.NewService(logger.Named("service"))
 	}
 
+	var e server.Endpoints
+	{
+		e = endpoints.NewAccountEndpoints(logger.Named("endpoints"), svc)
+	}
+
 	var srv http.Handler
 	{
-		srv = transport.NewServer(logger.Named("server"), svc)
+		srv = server.NewServer(logger.Named("server"), e)
 	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.

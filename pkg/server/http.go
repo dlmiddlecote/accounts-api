@@ -1,17 +1,14 @@
-package transport
+package server
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
-
-	account "github.com/dlmiddlecote/api.accounts"
 )
 
 // ctxKey represents the type of value for the context key.
@@ -32,30 +29,30 @@ type Values struct {
 type server struct {
 	router *httprouter.Router
 	logger *zap.SugaredLogger
-	as     account.Service
 }
 
 // NewServer returns a HTTP server for accessing the account service.
 // The server implements http.Handler.
-func NewServer(logger *zap.SugaredLogger, as account.Service) *server {
+func NewServer(logger *zap.SugaredLogger, e Endpoints) *server {
 	router := httprouter.New()
 	router.HandleOPTIONS = true
 
 	s := server{
 		router: router,
 		logger: logger,
-		as:     as,
 	}
 
-	// initialise router
-	s.routes()
+	// initialise server router
+	for _, e := range e.Endpoints() {
+		s.handle(e.Method, e.Path, e.Handler)
+	}
 
 	return &s
 }
 
-func (s *server) routes() {
-	s.handle("GET", "/accounts/:id", s.handleGetAccount())
-}
+// func (s *server) routes() {
+// 	s.handle("GET", "/accounts/:id", s.handleGetAccount())
+// }
 
 func (s *server) handle(method, path string, handler http.Handler) {
 
@@ -88,7 +85,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // helpers
 //
 
-func (s *server) respond(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
+func Respond(w http.ResponseWriter, r *http.Request, status int, data interface{}) {
 	if v, ok := r.Context().Value(KeyValues).(*Values); ok {
 		v.StatusCode = status
 	}
@@ -107,23 +104,3 @@ func (s *server) respond(w http.ResponseWriter, r *http.Request, status int, dat
 //
 // handlers
 //
-
-func (s *server) handleGetAccount() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := strconv.Atoi(httprouter.ParamsFromContext(r.Context()).ByName("id"))
-		if err != nil {
-			// id isn't an integer, respond with an error
-			s.respond(w, r, http.StatusBadRequest, nil)
-			return
-		}
-
-		acc, err := s.as.Account(id)
-		if err != nil {
-			// TODO: Handle different types of error
-			s.respond(w, r, http.StatusNotFound, nil)
-			return
-		}
-
-		s.respond(w, r, http.StatusOK, acc)
-	}
-}
