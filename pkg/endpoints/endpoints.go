@@ -8,7 +8,7 @@ import (
 	"go.uber.org/zap"
 
 	account "github.com/dlmiddlecote/accounts-api"
-	"github.com/dlmiddlecote/accounts-api/pkg/server"
+	"github.com/dlmiddlecote/kit/api"
 )
 
 type accountEndpoints struct {
@@ -20,8 +20,8 @@ func NewAccountEndpoints(logger *zap.SugaredLogger, as account.Service) *account
 	return &accountEndpoints{logger, as}
 }
 
-func (s *accountEndpoints) Endpoints() []server.Endpoint {
-	return []server.Endpoint{
+func (s *accountEndpoints) Endpoints() []api.Endpoint {
+	return []api.Endpoint{
 		{"GET", "/accounts/:id", s.handleGetAccount()},
 	}
 }
@@ -31,17 +31,17 @@ func (s *accountEndpoints) handleGetAccount() http.HandlerFunc {
 		id, err := strconv.Atoi(httprouter.ParamsFromContext(r.Context()).ByName("id"))
 		if err != nil {
 			// id isn't an integer, respond with an error
-			server.Respond(w, r, http.StatusBadRequest, nil)
+			api.Respond(w, r, http.StatusBadRequest, nil)
 			return
 		}
 
 		acc, err := s.as.Account(id)
 		if err != nil {
 			// TODO: Handle different types of error
-			server.Respond(w, r, http.StatusNotFound, nil)
+			api.Respond(w, r, http.StatusNotFound, nil)
 			return
 		}
 
-		server.Respond(w, r, http.StatusOK, acc)
+		api.Respond(w, r, http.StatusOK, acc)
 	}
 }

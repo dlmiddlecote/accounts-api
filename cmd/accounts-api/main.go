@@ -17,8 +17,8 @@ import (
 
 	account "github.com/dlmiddlecote/accounts-api"
 	"github.com/dlmiddlecote/accounts-api/pkg/endpoints"
-	"github.com/dlmiddlecote/accounts-api/pkg/server"
 	"github.com/dlmiddlecote/accounts-api/pkg/service"
+	"github.com/dlmiddlecote/kit/api"
 )
 
 const (
@@ -95,14 +95,14 @@ func run() error {
 		svc = service.NewService(logger.Named("service"))
 	}
 
-	var e server.Endpoints
+	var e api.Endpointer
 	{
 		e = endpoints.NewAccountEndpoints(logger.Named("endpoints"), svc)
 	}
 
 	var srv http.Handler
 	{
-		srv = server.NewServer(logger.Named("server"), e)
+		srv = api.NewServer(logger.Named("server"), e)
 	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
@@ -111,7 +111,7 @@ func run() error {
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 
 	// Create our http server
-	api := http.Server{
+	app := http.Server{
 		Addr:    cfg.Web.APIHost,
 		Handler: srv,
 	}
@@ -123,7 +123,7 @@ func run() error {
 	// Start the service listening for requests.
 	go func() {
 		logger.Infow("API listener starting", "addr", cfg.Web.APIHost)
-		serverErrors <- api.ListenAndServe()
+		serverErrors <- app.ListenAndServe()
 	}()
 
 	// Shutdown
@@ -140,10 +140,10 @@ func run() error {
 		defer cancel()
 
 		// Asking listener to shutdown and load shed.
-		err := api.Shutdown(ctx)
+		err := app.Shutdown(ctx)
 		if err != nil {
 			logger.Infow("Graceful shutdown did not complete", "err", err)
-			err = api.Close()
+			err = app.Close()
 		}
 
 		if err != nil {
