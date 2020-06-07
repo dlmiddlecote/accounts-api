@@ -88,7 +88,7 @@ func start() error {
 		}()
 	}
 
-	// main application
+	// main application setup
 	var svc account.Service
 	{
 		svc = service.NewService(logger.Named("service"))
