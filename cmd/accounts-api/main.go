@@ -27,13 +27,13 @@ const (
 )
 
 func main() {
-	if err := start(); err != nil {
+	if err := run(); err != nil {
 		fmt.Fprintf(os.Stderr, "error : %s", err)
 		os.Exit(1)
 	}
 }
 
-func start() error {
+func run() error {
 	// Configuration
 	var cfg struct {
 		Web struct {
