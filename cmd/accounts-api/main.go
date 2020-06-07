@@ -37,8 +37,8 @@ func run() error {
 	// Configuration
 	var cfg struct {
 		Web struct {
-			APIHost         string        `conf:"default:0.0.0.0:5000"`
-			DebugHost       string        `conf:"default:0.0.0.0:9000"`
+			APIHost         string        `conf:"default:0.0.0.0:8080"`
+			DebugHost       string        `conf:"default:0.0.0.0:8090"`
 			EnableDebug     bool          `conf:"default:true"`
 			ShutdownTimeout time.Duration `conf:"default:5s"`
 		}

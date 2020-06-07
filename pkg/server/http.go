@@ -29,6 +29,7 @@ type Values struct {
 type server struct {
 	router *httprouter.Router
 	logger *zap.SugaredLogger
+	mw     []Middleware
 }
 
 // NewServer returns a HTTP server for accessing the account service.
@@ -40,6 +41,7 @@ func NewServer(logger *zap.SugaredLogger, e Endpoints) *server {
 	s := server{
 		router: router,
 		logger: logger,
+		mw:     []Middleware{LogMW(logger), MetricsMW()},
 	}
 
 	// initialise server router
@@ -56,6 +58,8 @@ func NewServer(logger *zap.SugaredLogger, e Endpoints) *server {
 
 func (s *server) handle(method, path string, handler http.Handler) {
 
+	handler = wrapMiddleware(s.mw, handler)
+
 	// Create the function to execute for each request
 	h := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -70,7 +74,7 @@ func (s *server) handle(method, path string, handler http.Handler) {
 
 		ctx = context.WithValue(ctx, KeyValues, &v)
 
-		s.log(handler).ServeHTTP(w, r.WithContext(ctx))
+		handler.ServeHTTP(w, r.WithContext(ctx))
 	}
 
 	s.router.HandlerFunc(method, path, h)
