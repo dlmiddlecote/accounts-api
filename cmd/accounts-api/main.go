@@ -117,7 +117,7 @@ func run() error {
 		// Create our account API. This is an implementation of the kit API.
 		// It has a dependency on the account service, as it provides this service as a
 		// HTTP API.
-		accAPI := api.NewAccountAPI(logger.Named("api"), svc)
+		accAPI := api.NewAPI(logger.Named("api"), svc)
 
 		// Create our http.Server, exposing the account API on the given host.
 		app = kitapi.NewServer(cfg.Web.APIHost, logger.Named("server"), accAPI)
