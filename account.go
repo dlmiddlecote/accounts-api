@@ -1,3 +1,5 @@
+// Package account defines the domain of this application,
+// from the models, to the service it provides.
 package account
 
 // Account represents an Ometria client account.
