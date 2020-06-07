@@ -16,9 +16,9 @@ import (
 	"go.uber.org/zap"
 
 	account "github.com/dlmiddlecote/accounts-api"
-	"github.com/dlmiddlecote/accounts-api/pkg/endpoints"
+	"github.com/dlmiddlecote/accounts-api/pkg/api"
 	"github.com/dlmiddlecote/accounts-api/pkg/service"
-	"github.com/dlmiddlecote/kit/api"
+	kitapi "github.com/dlmiddlecote/kit/api"
 )
 
 const (
@@ -95,26 +95,20 @@ func run() error {
 		svc = service.NewService(logger.Named("service"))
 	}
 
-	var e api.Endpointer
+	var a kitapi.API
 	{
-		e = endpoints.NewAccountEndpoints(logger.Named("endpoints"), svc)
+		a = api.NewAccountAPI(logger.Named("api"), svc)
 	}
 
-	var srv http.Handler
+	var app http.Server
 	{
-		srv = api.NewServer(logger.Named("server"), e)
+		app = kitapi.NewServer(logger.Named("server"), a, cfg.Web.APIHost)
 	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
-
-	// Create our http server
-	app := http.Server{
-		Addr:    cfg.Web.APIHost,
-		Handler: srv,
-	}
 
 	// Make a channel to listen for errors coming from the listener. Use a
 	// buffered channel so the goroutine can exit if we don't collect this error.
