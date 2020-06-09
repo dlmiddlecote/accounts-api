@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/julienschmidt/httprouter"
 	"go.uber.org/zap"
 
 	account "github.com/dlmiddlecote/accounts-api"
@@ -35,7 +34,7 @@ func (a *accountAPI) handleGetAccount() http.Handler {
 	var h http.HandlerFunc = func(w http.ResponseWriter, r *http.Request) {
 
 		// Retrieve the ':id' param from the url path, and check it is an integer
-		id, err := strconv.Atoi(httprouter.ParamsFromContext(r.Context()).ByName("id"))
+		id, err := strconv.Atoi(api.URLParam(r, "id"))
 		if err != nil {
 			// id isn't an integer, respond with an error
 			api.Respond(w, r, http.StatusBadRequest, nil)
